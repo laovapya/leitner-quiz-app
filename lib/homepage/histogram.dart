@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:leiter_quiz_application/logic/question_set.dart';
+import 'package:leiter_quiz_application/logic/quiz_provider.dart';
 import 'dart:math' as math;
 
 class HistogramWidget extends StatelessWidget {
+  const HistogramWidget({Key? key}) : super(key: key);
+
   static const double histogramBarXOffset = 30;
   static const double histogramYaxisOffset = 5;
   static const double barWidth = 15;
   static const double tickWidth = 5;
+
+  static const int histogramSizeHeight = 150;
   //QuestionSet? questionSet;
-  List<int> barHeights = List.filled(QuestionSet.pileCount, 0);
+  //List<int> barHeights = List.filled(QuestionSet.pileCount, 0);
 
-  int _maxVerticalDivisions = 1;
-  static const int maxHorizontalDivisions = QuestionSet.pileCount;
+  // HistogramWidget(this.barHeights, int maxVerticalDivisions) {
+  //   _maxVerticalDivisions = maxVerticalDivisions > 0 ? maxVerticalDivisions : 1;
+  // }
 
-  HistogramWidget(this.barHeights, int maxVerticalDivisions) {
-    _maxVerticalDivisions = maxVerticalDivisions > 0 ? maxVerticalDivisions : 1;
-  }
-
-  int _height = 150;
   @override
   Widget build(BuildContext context) {
+    final quiz = QuizProvider.of(context)!.model;
+
+    final List<int> barHeights =
+        quiz.questionSet?.piles.map((pile) => pile.count()).toList() ??
+        List.filled(QuestionSet.pileCount, 0);
+
+    final int maxVerticalDivisions = quiz.questionAmount > 0
+        ? quiz.questionAmount
+        : 1;
+    const int maxHorizontalDivisions = QuestionSet.pileCount;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        height: _height.toDouble(),
+        height: histogramSizeHeight.toDouble(),
         color: Colors.grey[200],
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -46,7 +58,7 @@ class HistogramWidget extends StatelessWidget {
                       width: barWidth,
                       height: math.max(
                         tickWidth / 2,
-                        (barHeights[i] / _maxVerticalDivisions) * canvasHeight -
+                        (barHeights[i] / maxVerticalDivisions) * canvasHeight -
                             histogramYaxisOffset,
                       ),
 
@@ -56,7 +68,7 @@ class HistogramWidget extends StatelessWidget {
                 CustomPaint(
                   size: Size(canvasWidth, canvasHeight),
                   painter: _AxisPainter(
-                    _maxVerticalDivisions,
+                    maxVerticalDivisions,
                     maxHorizontalDivisions,
                     histogramBarXOffset,
                     histogramYaxisOffset,

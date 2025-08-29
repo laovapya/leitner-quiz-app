@@ -1,94 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:leiter_quiz_application/logic/quiz_model.dart';
+import 'package:leiter_quiz_application/logic/quiz_provider.dart';
 import 'package:leiter_quiz_application/page_container.dart';
 import 'package:leiter_quiz_application/quiz_button.dart';
-import 'package:leiter_quiz_application/logic/question_set.dart';
 
 class QuestionCardWidget extends StatefulWidget {
-  Question currentQuestion;
-  final List<Question> remainingDailyQuestions;
-  final QuestionSet questionSet;
-
-  QuestionCardWidget(this.remainingDailyQuestions, this.questionSet)
-    : currentQuestion = remainingDailyQuestions.isNotEmpty
-          ? remainingDailyQuestions[0]
-          : Question('', '');
-
+  const QuestionCardWidget({Key? key}) : super(key: key);
   @override
   _QuestionCardWidgetState createState() => _QuestionCardWidgetState();
 }
 
 class _QuestionCardWidgetState extends State<QuestionCardWidget> {
-  bool isCompleted = false;
-  bool isCorrect = false;
-  String currentAnswer = '';
-  //String finalAnswer = '';
+  //Question currentQuestion = Question('', '');
+  //const QuestionCardWidget({Key? key}) : super(key: key);
 
-  final TextEditingController _textController = TextEditingController();
-
-  void _answer() {
-    setState(() {
-      isCompleted = true;
-      isCorrect =
-          currentAnswer.trim().toLowerCase() ==
-          widget.currentQuestion.answerText.trim().toLowerCase();
-
-      if (isCorrect) {
-        widget.questionSet.advance(widget.currentQuestion);
-      } else {
-        widget.questionSet.reset(widget.currentQuestion);
-      }
-      widget.remainingDailyQuestions.removeAt(0);
-
-      _textController.clear();
-      FocusScope.of(context).unfocus();
-    });
-  }
-
-  void _moveToNext() {
-    setState(() {
-      isCompleted = false;
-      isCorrect = false;
-      currentAnswer = '';
-      if (widget.remainingDailyQuestions.isNotEmpty) {
-        widget.currentQuestion = widget.remainingDailyQuestions[0];
-      } else {
-        Navigator.pop(context);
-        print("no daily questions remaining!");
-      }
-      _textController.clear();
-      FocusScope.of(context).unfocus();
-    });
-  }
+  final TextEditingController textController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    final QuizModel quiz = QuizProvider.of(context)!.model;
+
     return PageContainer(
       hasBackArrow: true,
-      onBackPressed: _moveToNext,
+      onBackPressed: () {
+        quiz.moveToNextQuestion(context, textController);
+        quiz.currentAnswer = '';
+      },
       child: Column(
         children: [
           Container(
             width: double.infinity,
             height: 140,
-            color: widget.currentQuestion.color.withAlpha(128),
+            color: quiz.currentQuestion.color.withAlpha(128),
             alignment: Alignment.center,
             child: Text(
-              "Question: \n ${widget.currentQuestion.questionText}",
+              "Question: \n ${quiz.currentQuestion.questionText}",
               style: TextStyle(fontSize: 25),
               textAlign: TextAlign.center,
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Expanded(
             child: Container(
               alignment: Alignment.center,
 
-              child: isCompleted
+              child: quiz.isCompleted
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Your answer: ${currentAnswer}'),
-                        isCorrect
+                        Text('Your answer: ${quiz.currentAnswer}'),
+                        quiz.isCorrect
                             ? Text('Correct!', style: TextStyle(fontSize: 40))
                             : Column(
                                 children: [
@@ -97,7 +58,7 @@ class _QuestionCardWidgetState extends State<QuestionCardWidget> {
                                     style: TextStyle(fontSize: 40),
                                   ),
                                   Text(
-                                    'Correct answer: ${widget.currentQuestion.answerText}',
+                                    'Correct answer: ${quiz.currentQuestion.answerText}',
                                   ),
                                 ],
                               ),
@@ -106,23 +67,28 @@ class _QuestionCardWidgetState extends State<QuestionCardWidget> {
                   : null,
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           TextField(
-            enabled: !isCompleted,
-            controller: _textController,
+            enabled: !quiz.isCompleted,
+            controller: textController,
             textAlign: TextAlign.left,
             decoration: InputDecoration(hintText: "Answer..."),
             onChanged: (value) {
-              setState(() {
-                currentAnswer = value;
-              });
+              quiz.currentAnswer = value;
             },
           ),
-          SizedBox(height: 10),
-          isCompleted
-              ? QuizButtonWidget(text: 'Next', onPressed: _moveToNext)
-              : QuizButtonWidget(text: "Confirm", onPressed: _answer),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
+          quiz.isCompleted
+              ? QuizButtonWidget(
+                  text: 'Next',
+                  onPressed: () =>
+                      quiz.moveToNextQuestion(context, textController),
+                )
+              : QuizButtonWidget(
+                  text: "Confirm",
+                  onPressed: () => quiz.submitAnswer(context, textController),
+                ),
+          const SizedBox(height: 10),
         ],
       ),
     );
